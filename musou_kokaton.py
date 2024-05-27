@@ -326,6 +326,29 @@ class color():
     def __init__(self):
         self.image=pg.Surface((1000, 600))
         pg.draw.rect(self.image,(255, 255, 255),(0, 0), )
+
+
+class Boss(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/alien1.png"), 0, 1.5)
+        self.rect = self.image.get_rect()
+        self.rect.center = (WIDTH/2, 0)
+        self.vy = +3
+        self.bound = HEIGHT/2
+        self.state = "down"
+    
+    def update(self):
+        """
+        敵機を速度ベクトルself.vyに基づき移動（降下）させる
+        ランダムに決めた停止位置_boundまで降下したら，_stateを停止状態に変更する
+        引数 screen：画面Surface
+        """
+        if self.rect.centery > self.bound:
+            self.vy = 0
+            self.state = "stop"
+        self.rect.centery += self.vy
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -337,6 +360,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    bosses = pg.sprite.Group()
     gravitys = pg.sprite.Group()
     shields = pg.sprite.Group()
 
@@ -374,6 +398,9 @@ def main():
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
+        if tmr%1500 == 0:
+            print("hi")
+            bosses.add(Boss())
 
         for emy in emys:
             if emy.state == "stop" and tmr%emy.interval == 0:
@@ -426,6 +453,8 @@ def main():
         beams.draw(screen)
         emys.update()
         emys.draw(screen)
+        bosses.update()
+        bosses.draw(screen)
         bombs.update()
         bombs.draw(screen)
         shields.update()
