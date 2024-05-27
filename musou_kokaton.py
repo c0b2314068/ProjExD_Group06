@@ -267,6 +267,12 @@ class Gravity(pg.sprite.Sprite):
         pg.draw.rect(self.image, color, (0, 0, WIDTH, HEIGHT))
         self.image.set_alpha(128)
         self.rect = self.image.get_rect()
+    
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
 
 class Shield(pg.sprite.Sprite):
     """
@@ -301,7 +307,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 100000
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -399,21 +405,13 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
             exps.add(Explosion(bomb, 50))
             score.value += 1
-
-        bird.update(key_lst, screen, score)
-            
-        for bomb in pg.sprite.spritecollide(bird, bombs, True):
+   
+        for bomb in pg.sprite.spritecollide(bird, bombs, False):
             if bird.state == "hyper":
                 exps.add(Explosion(bomb, 50))  # 爆発エフェクト
                 score.value += 1
-            else:
-                bird.change_img(8, screen) # こうかとん悲しみエフェクト
-                score.update(screen)
-                pg.display.update()
-                time.sleep(2)
-                return
-            
-        for bomb in pg.sprite.spritecollide(bird, bombs, True):
+                bomb.kill()
+                continue
             if bomb.state == "inactive":
                 continue
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
@@ -421,7 +419,8 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
-
+        
+        bird.update(key_lst, screen, score)
         beams.update()
         beams.draw(screen)
         emys.update()
