@@ -96,6 +96,7 @@ class Bird(pg.sprite.Sprite):
             if key_lst[k]:
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
+        self.sum_mv = sum_mv
         key_lst = pg.key.get_pressed()
               
         self.rect.move_ip(self.speed*sum_mv[0], self.speed*sum_mv[1])
@@ -328,26 +329,122 @@ class color():
         pg.draw.rect(self.image,(255, 255, 255),(0, 0), )
 
 
-class Boss(pg.sprite.Sprite):
+class Enemy2(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
+        self.tmr = 0
+        self.life = 30
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/alien1.png"), 0, 1.5)
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, 0)
-        self.vy = +3
-        self.bound = HEIGHT/2
+        self.vx = random.randint(2, 4)
+        self.vy = +1
+        self.bound_x = WIDTH//12
+        self.bound_y = HEIGHT//6
         self.state = "down"
     
-    def update(self):
+    def update(self, bullets : pg.sprite.Group, bird : Bird):
         """
         敵機を速度ベクトルself.vyに基づき移動（降下）させる
         ランダムに決めた停止位置_boundまで降下したら，_stateを停止状態に変更する
         引数 screen：画面Surface
         """
-        if self.rect.centery > self.bound:
+        if self.tmr % 500 == 100 :
+            self.n_way(12, random.randint(4, 7), bullets, bird)
+        if self.tmr % 50 == 25:
+            self.n_way(1, 6.0, bullets, bird)
+        if self.tmr % 150 == 35:
+            self.predict(16, bullets, bird)
+        if self.tmr % 15 == 14:
+            bullets.add(Bullet(5, random.randint(0, 359), self))
+        if self.state != "down":
+            self.tmr += 1
+        if self.rect.centery > self.bound_y:
             self.vy = 0
-            self.state = "stop"
+            self.state = "move"
+        if self.state == "move":
+            self.rect.move_ip(self.vx, 0)
+        if self.rect.left < self.bound_x or WIDTH-self.bound_x < self.rect.right:
+            self.vx *= -1
+            self.rect.move_ip(self.vx, 0)
         self.rect.centery += self.vy
+
+    def PlusMin(self, a, b):
+        if a < 0 and b < 0:
+            return 0
+        if a < 0:
+            return b
+        if b < 0:
+            return a
+        if a < b:
+            return a
+        else:
+            return b
+        
+    def n_way(self, n : int, speed : float, bullets : pg.sprite.Group, bird : Bird):
+        x, y = calc_orientation(self.rect, bird.rect)
+        angle0 = int(math.degrees(math.atan2(y, x)))
+        for angle in range(0+angle0, 360+angle0, 360//n):
+            bullets.add(Bullet(speed, angle, self))
+    
+    def predict(self, speed : float, bullets : pg.sprite.Group, bird : Bird):
+        pred_x, pred_y = 0, 0
+        pos_x = self.rect.centerx - bird.rect.centerx
+        pos_y = self.rect.centery - bird.rect.centery
+        bspeed_x = bird.speed*bird.sum_mv[0]
+        bspeed_y = bird.speed*bird.sum_mv[1]
+        l = math.sqrt(pos_x**2 + pos_y**2)
+        v = math.sqrt(bspeed_x**2 + bspeed_y**2)
+        t1, t2 = 0, 0
+        ang1 = abs(math.degrees(math.atan2(bird.sum_mv[1], bird.sum_mv[0])))
+        ang2 = abs(math.degrees(math.atan2(pos_y, pos_x)))
+        if abs(ang1 - ang2) > 180:
+            ang = 360 - abs(ang1 - ang2)
+        else:
+            ang = abs(ang1 - ang2)
+        
+        t1 = l / (-speed*math.sqrt(1 - ((v/speed)*math.sin(ang))**2) - v*math.cos(ang))
+        t2 = l / (speed*math.sqrt(1 - ((v/speed)*math.sin(ang))**2) - v*math.cos(ang))
+        t = self.PlusMin(t1, t2)
+        
+        pred_x = bird.rect.centerx + bspeed_x*t
+        pred_y = bird.rect.centery + bspeed_y*t
+
+        x_diff, y_diff = (pred_x-self.rect.centerx), (pred_y-self.rect.centery)
+        norm = math.sqrt(x_diff**2+y_diff**2)
+        angle = int(math.degrees(math.atan2(y_diff/norm, x_diff/norm)))
+        bullets.add(Bullet(speed, angle, self))
+
+
+class Bullet(pg.sprite.Sprite):
+    def __init__(self, speed : float, angle : float, emy2 : Enemy2):
+        super().__init__()
+        rad = 10
+        self.image = pg.Surface((2*rad, 2*rad))
+        color = (random.randint(50, 100), random.randint(100, 150), random.randint(50, 100))
+        pg.draw.circle(self.image, color, (rad, rad), rad)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        # self.pos = [boss.rect.centerx, boss.rect.centery]
+        self.speed = speed
+        self.vx = math.cos(math.radians(angle))
+        self.vy = math.sin(math.radians(angle))
+        self.rect.centerx = emy2.rect.centerx
+        self.rect.centery = emy2.rect.centery
+        self.state="active"
+
+    def update(self):
+        """
+        爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
+        引数 screen：画面Surface
+        """
+        # self.pos[0] += self.speed*self.vx
+        # self.pos[1] += self.speed*self.vy
+        # screen.blit(self.image, self.pos)
+        self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
+        if check_bound(self.rect) != (True, True):
+            self.kill()
+
 
 def main():
     pg.display.set_caption("真！こうかとん無双")
@@ -360,7 +457,8 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
-    bosses = pg.sprite.Group()
+    emy2s = pg.sprite.Group()
+    bullets = pg.sprite.Group()
     gravitys = pg.sprite.Group()
     shields = pg.sprite.Group()
 
@@ -396,11 +494,10 @@ def main():
                     shields.add(Shield(bird, 400))
         screen.blit(bg_img, [0, 0])
 
+        if tmr%1300 == 9:
+            emy2s.add(Enemy2())
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
-        if tmr%1500 == 0:
-            print("hi")
-            bosses.add(Boss())
 
         for emy in emys:
             if emy.state == "stop" and tmr%emy.interval == 0:
@@ -416,16 +513,29 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
         
+        for emy2 in pg.sprite.groupcollide(emy2s, beams, False, True):
+            emy2.life -= 1
+            score.value += 5
+            if emy2.life < 0:
+                emy2.kill()
+                exps.add(Explosion(emy2, 200))
+                score.value += 200
+        
         for emy in pg.sprite.groupcollide(emys, gravitys, True, False).keys():
             exps.add(Explosion(emy, 50))
             score.value += 10
         for bomb in pg.sprite.groupcollide(bombs, gravitys, True, False).keys():
             exps.add(Explosion(bomb, 50))
             score.value += 1
+        for bullet in pg.sprite.groupcollide(bullets, gravitys, True, False):
+            pass
 
         for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
             exps.add(Explosion(bomb, 50))
             score.value += 1
+        for bullet in pg.sprite.groupcollide(bullets, shields, True, False):
+            pass
+
 
         bird.update(key_lst, screen, score)
             
@@ -448,13 +558,24 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+        for bullet in pg.sprite.spritecollide(bird, bullets, True):
+            if bird.state == "hyper":
+                continue
+            bird.change_img(8, screen) # こうかとん悲しみエフェクト
+            score.update(screen)
+            pg.display.update()
+            time.sleep(2)
+            return
 
         beams.update()
         beams.draw(screen)
         emys.update()
         emys.draw(screen)
-        bosses.update()
-        bosses.draw(screen)
+        emy2s.update(bullets, bird)
+        emy2s.draw(screen)
+        bullets.update()
+        bullets.draw(screen)
         bombs.update()
         bombs.draw(screen)
         shields.update()
