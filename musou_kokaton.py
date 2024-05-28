@@ -332,23 +332,25 @@ class color():
 class Enemy2(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.tmr = 0
-        self.life = 30
+        self.tmr = 0  #タイマー
+        self.life = 30  #HP
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/alien1.png"), 0, 1.5)
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, 0)
         self.vx = random.randint(2, 4)
-        self.vy = +1
-        self.bound_x = WIDTH//12
-        self.bound_y = HEIGHT//6
+        self.vy = +1  #降下速度
+        self.bound_x = WIDTH//12  #横に動ける範囲
+        self.bound_y = HEIGHT//6  #縦に動ける範囲
         self.state = "down"
     
     def update(self, bullets : pg.sprite.Group, bird : Bird):
         """
         敵機を速度ベクトルself.vyに基づき移動（降下）させる
-        ランダムに決めた停止位置_boundまで降下したら，_stateを停止状態に変更する
-        引数 screen：画面Surface
+        停止位置_bound_yまで降下したら，_stateを活動状態に変更する
+        引数1 bullets : 弾のGroupオブジェクト
+        引数2 bird : こうかとんクラス
         """
+        #一定間隔で攻撃を行う
         if self.tmr % 500 == 100 :
             self.n_way(12, random.randint(4, 7), bullets, bird)
         if self.tmr % 50 == 25:
@@ -357,11 +359,15 @@ class Enemy2(pg.sprite.Sprite):
             self.predict(16, bullets, bird)
         if self.tmr % 15 == 14:
             bullets.add(Bullet(5, random.randint(0, 359), self))
+        
+        #降下しきるまで活動しない
         if self.state != "down":
             self.tmr += 1
         if self.rect.centery > self.bound_y:
             self.vy = 0
             self.state = "move"
+        
+        #左右に動かす処理
         if self.state == "move":
             self.rect.move_ip(self.vx, 0)
         if self.rect.left < self.bound_x or WIDTH-self.bound_x < self.rect.right:
@@ -370,6 +376,9 @@ class Enemy2(pg.sprite.Sprite):
         self.rect.centery += self.vy
 
     def PlusMin(self, a, b):
+        """
+        0以上であるもののうち最も小さい数を返す関数
+        """
         if a < 0 and b < 0:
             return 0
         if a < 0:
@@ -382,17 +391,33 @@ class Enemy2(pg.sprite.Sprite):
             return b
         
     def n_way(self, n : int, speed : float, bullets : pg.sprite.Group, bird : Bird):
+        """
+        n個の弾を円状に発射する
+        引数1 n : 弾の個数
+        引数2 speed : 弾の速さ
+        引数3 bullets : 弾のGroupオブジェクト
+        引数4 bird : こうかとんクラス
+        """
+        #自分から見たこうかとんの角度を計算
         x, y = calc_orientation(self.rect, bird.rect)
         angle0 = int(math.degrees(math.atan2(y, x)))
+
+        #角度の差が等しいn個のBulletオブジェクトを生成する
         for angle in range(0+angle0, 360+angle0, 360//n):
             bullets.add(Bullet(speed, angle, self))
     
     def predict(self, speed : float, bullets : pg.sprite.Group, bird : Bird):
-        pred_x, pred_y = 0, 0
-        pos_x = self.rect.centerx - bird.rect.centerx
+        """
+        こうかとんの動きを予測して弾を発射する
+        引数1 speed : 弾の速さ
+        引数2 bullets : 弾のGroupオブジェクト
+        引数3 bird : こうかとんクラス
+        """
+        pred_x, pred_y = 0, 0  #予測位置の初期化
+        bspeed_x = bird.speed*bird.sum_mv[0]  #こうかとんの速度のx成分
+        bspeed_y = bird.speed*bird.sum_mv[1]  #こうかとんの速度のy成分
+        pos_x = self.rect.centerx - bird.rect.centerx 
         pos_y = self.rect.centery - bird.rect.centery
-        bspeed_x = bird.speed*bird.sum_mv[0]
-        bspeed_y = bird.speed*bird.sum_mv[1]
         l = math.sqrt(pos_x**2 + pos_y**2)
         v = math.sqrt(bspeed_x**2 + bspeed_y**2)
         t1, t2 = 0, 0
@@ -417,7 +442,15 @@ class Enemy2(pg.sprite.Sprite):
 
 
 class Bullet(pg.sprite.Sprite):
+    """
+    弾に関するクラス
+    """
     def __init__(self, speed : float, angle : float, emy2 : Enemy2):
+        """
+        引数1 speed : 弾の速度
+        引数2 angle : 弾の角度(度数法)
+        引数3 emy2 : 弾を発射する敵のクラス
+        """
         super().__init__()
         rad = 10
         self.image = pg.Surface((2*rad, 2*rad))
@@ -425,22 +458,16 @@ class Bullet(pg.sprite.Sprite):
         pg.draw.circle(self.image, color, (rad, rad), rad)
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
-        # self.pos = [boss.rect.centerx, boss.rect.centery]
-        self.speed = speed
-        self.vx = math.cos(math.radians(angle))
-        self.vy = math.sin(math.radians(angle))
         self.rect.centerx = emy2.rect.centerx
         self.rect.centery = emy2.rect.centery
-        self.state="active"
+        self.speed = speed  #弾の速度
+        self.vx = math.cos(math.radians(angle))  #速度のx成分
+        self.vy = math.sin(math.radians(angle))  #速度のy成分
 
     def update(self):
         """
-        爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
-        引数 screen：画面Surface
+        弾を速度ベクトルself.vx, self.vyに基づき移動させる
         """
-        # self.pos[0] += self.speed*self.vx
-        # self.pos[1] += self.speed*self.vy
-        # screen.blit(self.image, self.pos)
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound(self.rect) != (True, True):
             self.kill()
@@ -494,7 +521,7 @@ def main():
                     shields.add(Shield(bird, 400))
         screen.blit(bg_img, [0, 0])
 
-        if tmr%1300 == 9:
+        if tmr%1300 == 1299: # 1300フレームに1回，強めの敵を出現させる
             emy2s.add(Enemy2())
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
