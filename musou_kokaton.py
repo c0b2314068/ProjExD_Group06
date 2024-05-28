@@ -124,7 +124,7 @@ class Bomb(pg.sprite.Sprite):
     """
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
-    def __init__(self, emy: "Enemy", bird: Bird, bos: "BOSS"):
+    def __init__(self, emy: "Enemy", bird: Bird):
         """
         爆弾円Surfaceを生成する
         引数1 emy：爆弾を投下する敵機
@@ -142,9 +142,9 @@ class Bomb(pg.sprite.Sprite):
         self.rect.centerx = emy.rect.centerx
         self.rect.centery = emy.rect.centery+emy.rect.height/2
 
-        self.bosvx, self.bosvy = calc_orientation(bos.rect, bird.rect)  
-        self.rect.centerx = bos.rect.centerx
-        self.rect.centery = bos.rect.centery+bos.rect.height/2
+        # self.bosvx, self.bosvy = calc_orientation(bos.rect, bird.rect)  
+        # self.rect.centerx = bos.rect.centerx
+        # self.rect.centery = bos.rect.centery+bos.rect.height/2
 
         self.speed = 6
         self.state="active"
@@ -155,7 +155,7 @@ class Bomb(pg.sprite.Sprite):
         引数 screen：画面Surface
         """
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
-        self.rect.move_ip(self.speed*self.bosvx, self.speed*self.bosvy)
+        # self.rect.move_ip(self.speed*self.bosvx, self.speed*self.bosvy)
         if check_bound(self.rect) != (True, True):
             self.kill()
 
@@ -248,7 +248,7 @@ class Enemy(pg.sprite.Sprite):
         self.vy = +6
         self.bound = random.randint(50, HEIGHT/2)  # 停止位置
         self.state = "down"  # 降下状態or停止状態
-        self.interval = random.randint(50, 300)  # 爆弾投下インターバル
+        self.interval = random.randint(50, 200)  # 爆弾投下インターバル
 
     def update(self):
         """
@@ -337,10 +337,11 @@ class BOSS(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = WIDTH/2, -100
         self.vy = +6
+        self.life=20
         self.bound = HEIGHT/5  # 停止位置
         self.state = "down"  # 降下状態or停止状態
         self.interval = random.randint(10, 80)  # 爆弾投下インターバル
-    
+
     def update(self):
         if self.rect.centery > self.bound:
             self.vy = 0
@@ -399,24 +400,36 @@ def main():
                     shields.add(Shield(bird, 400))
         screen.blit(bg_img, [0, 0])
 
-        if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
+        if tmr%150 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
 
-        # for emy in emys:
-        #     if emy.state == "stop" and tmr%emy.interval == 0:
-        #         # 敵機が停止状態に入ったら，intervalに応じて爆弾投下
-        #         bombs.add(Bomb(emy, bird, bos))
+        if tmr% 1000 == 500:
+            boss.add(BOSS())
+
+        for emy in emys:
+            if emy.state == "stop" and tmr%emy.interval == 0:
+                # 敵機が停止状態に入ったら，intervalに応じて爆弾投下
+                bombs.add(Bomb(emy, bird))
         for bos in boss:
             if bos.state == "stop" and tmr%bos.interval == 0:
-                bombs.add(Bomb(emy, bird, bos))  
-            
+                bombs.add(Bomb(bos, bird))
  
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
-            score.value += 100  # 10点アップ
+            score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
-            if score.value >= 100 and len(boss)==0:
-                boss.add(BOSS())
+            # if score.value >= 100 and len(boss)==0:
+            #     boss.add(BOSS())
+                
+        
+        for bos in pg.sprite.groupcollide(boss, beams, False, True):
+            bos.life -= 1
+            score.value += 5
+            if bos.life < 0:
+                bos.kill()
+                exps.add(Explosion(bos, 200))
+                score.value+=200
+
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
