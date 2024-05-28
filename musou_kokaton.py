@@ -124,7 +124,7 @@ class Bomb(pg.sprite.Sprite):
     """
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
-    def __init__(self, emy: "Enemy", bird: Bird):
+    def __init__(self, emy: "Enemy", bird: Bird, score):
         """
         爆弾円Surfaceを生成する
         引数1 emy：爆弾を投下する敵機
@@ -148,16 +148,30 @@ class Bomb(pg.sprite.Sprite):
 
         self.speed = 6
         self.state="active"
+        if score.value >= 100:  # 得点に応じてスピードを変更
+            self.speed = 7 
+        if score.value >= 200:
+            self.speed = 8
+        if score.value >= 300:
+            self.speed = 9 
 
     def update(self):
         """
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
+        yoko, tate = check_bound(self.rect)  
+        if not yoko:
+            self.vx *= -1   # 爆弾を反射させる
+        if not tate:
+            self.vy *= -1
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
+
         # self.rect.move_ip(self.speed*self.bosvx, self.speed*self.bosvy)
         if check_bound(self.rect) != (True, True):
             self.kill()
+
+
 
 
 class Beam(pg.sprite.Sprite):
@@ -311,8 +325,12 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
+
         self.boss=0
         self.value = 0
+
+        self.value = 300
+
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -474,11 +492,15 @@ def main():
         for emy in emys:
             if emy.state == "stop" and tmr%emy.interval == 0:
                 # 敵機が停止状態に入ったら，intervalに応じて爆弾投下
+
                 bombs.add(Bomb(emy, bird))
         for bos in boss:
             if bos.state == "stop" and tmr%bos.interval == 0:
                 bombs.add(Bomb(bos, bird))
  
+                bombs.add(Bomb(emy, bird, score))
+
+
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.value += 10  # 10点アップ
