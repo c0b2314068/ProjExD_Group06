@@ -320,12 +320,50 @@ class EMP():
         for bomb in bombs:
             bomb.speed/=2
             bomb.state="inactive"
-        
-        
+
+
+#itemに関するクラス
+class Spanner(pg.sprite.Sprite):
+    
+
+    def __init__(self, obj: "Enemy"):
+        """
+        アイテムを生成する
+        引数1 obj：爆発する敵機インスタンス
+        """
+        super().__init__()
+        img = pg.image.load(f"fig/spanner.png")
+        self.image = pg.transform.scale(img, (img.get_width() * 0.1, img.get_height() * 0.1)) #画像を縮小
+        self.rect = self.image.get_rect(center=obj.rect.center)
+        self.speed = 3
+
+
+    def update(self):
+        self.rect.y += self.speed #下方向に落下
+    
+
+class Doublescore(pg.sprite.Sprite):
+    def __init__(self, obj: "Enemy"):
+        """
+        アイテムを生成する
+        引数1 obj：爆発する敵機インスタンス
+        """
+        super().__init__()
+        img = pg.image.load(f"fig/double.png")
+        self.image = pg.transform.scale(img, (img.get_width() * 0.03, img.get_height() * 0.03)) #画像を縮小
+        self.rect = self.image.get_rect(center=obj.rect.center)
+        self.speed = 3
+
+    def update(self):
+        self.rect.y += self.speed #下方向に落下
+
+
 class color():
     def __init__(self):
         self.image=pg.Surface((1000, 600))
         pg.draw.rect(self.image,(255, 255, 255),(0, 0), )
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -339,8 +377,12 @@ def main():
     emys = pg.sprite.Group()
     gravitys = pg.sprite.Group()
     shields = pg.sprite.Group()
+    spanners = pg.sprite.Group()
+    doublescores = pg.sprite.Group()
 
     tmr = 0
+    rand = 0
+
     clock = pg.time.Clock()
     while True:
         key_lst = pg.key.get_pressed()
@@ -357,6 +399,7 @@ def main():
                     neobeam = NeoBeam(bird, 7)
                     for beam in neobeam.gen_beams():
                         beams.add(beam)
+                
                 
             if event.type == pg.KEYDOWN and event.key == pg.K_e:
                 if score.value > 20:
@@ -383,7 +426,34 @@ def main():
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.value += 10  # 10点アップ
+            
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
+            rand = random.randint(1,4)  #4分の1の確率でアイテム生成
+            if rand == 1:
+                spanners.add(Spanner(emy))
+            elif rand == 2:
+                doublescores.add(Doublescore(emy))
+
+        for spanner in pg.sprite.spritecollide(bird, spanners, True):
+            bird.change_img(6.1, screen) # こうかとん覚醒エフェクト
+            #state = "hyper"
+            hyper_life = 500  # 発動時間
+            # if state == "hyper":   # 無敵状態のとき
+            #     hyper_life -= 1
+            #     if hyper_life < 0:
+            #         state = "normal"
+            
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:    
+                neobeam = NeoBeam(bird, 7)
+                for beam in neobeam.gen_beams():
+                    beams.add(beam)
+
+
+        for doublescore in pg.sprite.spritecollide(bird, doublescores, True):
+            bird.change_img(6, screen)   # こうかとん喜びエフェクト
+            score.value *= 2  # 2倍点アップ
+
+
 
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
@@ -435,6 +505,10 @@ def main():
         gravitys.update()
         gravitys.draw(screen)
         score.update(screen)
+        spanners.update()
+        spanners.draw(screen)
+        doublescores.update()
+        doublescores.draw(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
