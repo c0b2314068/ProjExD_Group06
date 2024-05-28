@@ -160,27 +160,33 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird, angle0 : float = 0):
+    def __init__(self, bird: Bird, angle0 : float = 0, a=2.0):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
         """
         super().__init__()
         self.vx, self.vy = bird.dire
-        angle = angle0 + math.degrees(math.atan2(-self.vy, self.vx))
-        self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle, 2.0)
-        self.vx = math.cos(math.radians(angle))
-        self.vy = -math.sin(math.radians(angle))
+        self.angle = angle0 + math.degrees(math.atan2(-self.vy, self.vx))
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), self.angle, a)
+        self.vx = math.cos(math.radians(self.angle))
+        self.vy = -math.sin(math.radians(self.angle))
         self.rect = self.image.get_rect()
         self.rect.centery = bird.rect.centery+bird.rect.height*self.vy
         self.rect.centerx = bird.rect.centerx+bird.rect.width*self.vx
         self.speed = 10
+        self.time = 0
 
     def update(self):
         """
         ビームを速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
+        if self.time > 0:
+                print(self.time)
+                
+                self.time -= 1
+                self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), self.angle, 6.0)
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound(self.rect) != (True, True):
             self.kill()
@@ -336,6 +342,7 @@ class Spanner(pg.sprite.Sprite):
         self.image = pg.transform.scale(img, (img.get_width() * 0.1, img.get_height() * 0.1)) #画像を縮小
         self.rect = self.image.get_rect(center=obj.rect.center)
         self.speed = 3
+        self.time = 500
 
 
     def update(self):
@@ -379,12 +386,14 @@ def main():
     shields = pg.sprite.Group()
     spanners = pg.sprite.Group()
     doublescores = pg.sprite.Group()
+    time = 0
 
     tmr = 0
     rand = 0
 
     clock = pg.time.Clock()
     while True:
+        print(time)
         key_lst = pg.key.get_pressed()
         mode = 0
         if key_lst[pg.K_LSHIFT]:
@@ -394,7 +403,13 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 if not mode:
-                    beams.add(Beam(bird))
+                    
+                    if time > 0: 
+                        beams.add(Beam(bird,a=6))
+                        time -= 1
+                        print(time)
+                    else:
+                        beams.add(Beam(bird))
                 else:
                     neobeam = NeoBeam(bird, 7)
                     for beam in neobeam.gen_beams():
@@ -428,16 +443,20 @@ def main():
             score.value += 10  # 10点アップ
             
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
-            rand = random.randint(1,4)  #4分の1の確率でアイテム生成
+            rand = random.randint(1,2)  #4分の1の確率でアイテム生成
             if rand == 1:
                 spanners.add(Spanner(emy))
             elif rand == 2:
                 doublescores.add(Doublescore(emy))
 
         for spanner in pg.sprite.spritecollide(bird, spanners, True):
-            bird.change_img(6.1, screen) # こうかとん覚醒エフェクト
+            time = 10
+            bird.change_img(6.1, screen)  # こうかとん覚醒エフェクト
             #state = "hyper"
-            hyper_life = 500  # 発動時間
+            
+            
+            
+            
             # if state == "hyper":   # 無敵状態のとき
             #     hyper_life -= 1
             #     if hyper_life < 0:
@@ -491,6 +510,9 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+
+        
 
         beams.update()
         beams.draw(screen)
