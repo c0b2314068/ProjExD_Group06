@@ -82,6 +82,8 @@ class Bird(pg.sprite.Sprite):
         引数2 screen：画面Surface
         """
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/{num}.png"), 0, 2.0)
+        if self.state == "hyper":   # 無敵状態のとき
+            self.image = pg.transform.laplacian(self.image)
         screen.blit(self.image, self.rect)
 
     def update(self, key_lst: list[bool], screen: pg.Surface, score):
@@ -187,6 +189,7 @@ class Beam(pg.sprite.Sprite):
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound(self.rect) != (True, True):
             self.kill()
+        
 
 
 class NeoBeam:
@@ -396,6 +399,7 @@ def main():
             score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
+
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
@@ -421,7 +425,12 @@ def main():
             elif bird.state == "normal":  # こうかとんが通常状態のとき
                 bird.life -= 1  # 体力を1減らす
                 life.value = bird.life # 体力の更新
-                exps.add(Explosion(bird, 50))  # 爆発エフェクト
+                exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+                red = pg.Surface((WIDTH, HEIGHT))
+                pg.draw.rect(red, (255, 0, 0), (0, 0, WIDTH, HEIGHT))
+                red.set_alpha(64)
+                screen.blit(red,(0,0))
+                pg.display.update()
             if bird.life <= 0:  # こうかとんの体力が0以下になったとき
                 bird.change_img(8, screen) # こうかとん悲しみエフェクト
                 score.update(screen)
