@@ -159,7 +159,7 @@ class Bomb(pg.sprite.Sprite):
         """
         yoko, tate = check_bound(self.rect)  
         if not yoko:
-            self.vx *= -1   # 爆弾が反射
+            self.vx *= -1   # 爆弾を反射させる
         if not tate:
             self.vy *= -1
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
@@ -310,7 +310,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 300
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
