@@ -218,14 +218,16 @@ class NeoBeam:
     """
     ビームの同時発射に関するクラス
     """
-    def __init__(self, bird : Bird, num : int):
+    def __init__(self, bird : Bird, num : int, b):
         self.bird = bird
         self.num = num
+        self.b = b
+        
     
     def gen_beams(self):
         beams = []
         for angle in range(-50, +51, 100//(self.num-1)):
-            beam = Beam(self.bird, angle)
+            beam = Beam(self.bird, angle, self.b)
             beams.append(beam)
         return beams
 
@@ -619,12 +621,14 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 if not mode:
                     if btime > 0: 
-                        beams.add(Beam(bird,a=6))
+                        neobeam = NeoBeam(bird, 7,4)
+                        for beam in neobeam.gen_beams():
+                            beams.add(beam)
                         btime -= 1
                     else:
                         beams.add(Beam(bird))
                 else:
-                    neobeam = NeoBeam(bird, 7)
+                    neobeam = NeoBeam(bird, 7,2)
                     for beam in neobeam.gen_beams():
                         beams.add(beam)
             #EMP
@@ -666,7 +670,7 @@ def main():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
-            rand = random.randint(1,8)  #4分の1の確率でアイテム生成
+            rand = random.randint(1,4)  #4分の1の確率でアイテム生成
             if rand == 1:
                 spanners.add(Spanner(emy))
             elif rand == 2:
@@ -675,7 +679,7 @@ def main():
         #アイテムの取得に関する処理
         for spanner in pg.sprite.spritecollide(bird, spanners, True):
             btime = 10
-            bird.change_img(6.1, screen)  # こうかとん覚醒エフェクト
+            bird.change_img(6, screen)  # こうかとん喜びエフェクト
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:    
                 neobeam = NeoBeam(bird, 7)
                 for beam in neobeam.gen_beams():
