@@ -619,18 +619,23 @@ def main():
                 return 0
             #ビーム
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                if not mode:
-                    if btime > 0: 
-                        neobeam = NeoBeam(bird, 7,4)
+                
+                if btime > 0: 
+                    if not mode:
+                        beams.add(Beam(bird,a=4))
+                        btime -= 1
+                    else:
+                        neobeam = NeoBeam(bird, 7,b=4)
                         for beam in neobeam.gen_beams():
                             beams.add(beam)
                         btime -= 1
-                    else:
-                        beams.add(Beam(bird))
                 else:
-                    neobeam = NeoBeam(bird, 7,2)
-                    for beam in neobeam.gen_beams():
-                        beams.add(beam)
+                    if not mode:
+                        beams.add(Beam(bird))
+                    else:
+                        neobeam = NeoBeam(bird, 7,b=2)
+                        for beam in neobeam.gen_beams():
+                            beams.add(beam)
             #EMP
             if event.type == pg.KEYDOWN and event.key == pg.K_e:
                 if score.value > 20:
