@@ -71,7 +71,7 @@ class Bird(pg.sprite.Sprite):
         self.speed = 10
         self.state = "normal"
         self.hyper_life = 0
-        self.life = 3  # こうかとんの初期体力
+        self.life = 10  # こうかとんの初期体力
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -406,7 +406,7 @@ class BOSS(pg.sprite.Sprite):
     """
     ボスに関するクラス
     """    
-    image = pg.transform.scale2x(pg.image.load("fig/alien1.png"))
+    image = pg.transform.rotozoom(pg.image.load(f"fig/ufo_8.png"), 0, 0.6)
 
     def __init__(self):
         super().__init__()
@@ -439,11 +439,11 @@ class Enemy2(pg.sprite.Sprite):
         super().__init__()
         self.tmr = 0  #タイマー
         self.life = 30  #HP
-        self.image = pg.transform.rotozoom(pg.image.load(f"fig/alien1.png"), 0, 1.5)
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/satellite.png"), 0, 0.7)
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, 0)
-        self.vx = random.randint(2, 4)
-        self.vy = +1  #降下速度
+        self.vx = random.randint(3, 5)
+        self.vy = +2  #降下速度
         self.bound_x = WIDTH//12  #横に動ける範囲
         self.bound_y = HEIGHT//6  #縦に動ける範囲
         self.state = "down"
@@ -557,11 +557,12 @@ class Bullet(pg.sprite.Sprite):
         引数3 emy2 : 弾を発射する敵のクラス
         """
         super().__init__()
-        rad = 10
-        self.image = pg.Surface((2*rad, 2*rad))
-        color = (random.randint(50, 100), random.randint(100, 150), random.randint(50, 100))
-        pg.draw.circle(self.image, color, (rad, rad), rad)
-        self.image.set_colorkey((0, 0, 0))
+        # rad = 10
+        # self.image = pg.Surface((2*rad, 2*rad))
+        # color = (random.randint(50, 100), random.randint(100, 150), random.randint(50, 100))
+        # pg.draw.circle(self.image, color, (rad, rad), rad)
+        # self.image.set_colorkey((0, 0, 0))
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/rocket.png"), angle, 1.0)
         self.rect = self.image.get_rect()
         self.rect.centerx = emy2.rect.centerx
         self.rect.centery = emy2.rect.centery
