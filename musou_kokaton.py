@@ -441,7 +441,7 @@ class Enemy2(pg.sprite.Sprite):
         self.life = 30  #HP
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/satellite.png"), 0, 0.7)
         self.rect = self.image.get_rect()
-        self.rect.center = (WIDTH/2, 0)
+        self.rect.center = (random.randint(WIDTH//10, WIDTH - WIDTH//10), 0)
         self.vx = random.randint(3, 5)
         self.vy = +2  #降下速度
         self.bound_x = WIDTH//12  #横に動ける範囲
@@ -646,7 +646,7 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
                 if score.value >= 200:
                     score.value -= 200
-                    gravitys.add(Gravity(400))
+                    gravitys.add(Gravity(50))
             #防御壁
             if event.type == pg.KEYDOWN and event.key == pg.K_v:
                 if score.value >= 50 and len(shields) == 0:
@@ -655,11 +655,12 @@ def main():
         screen.blit(bg_img, [0, 0])
 
         #敵の出現処理
-        if tmr%1300 == 9: # 1300フレームに1回，強めの敵を出現させる
+        level = int(math.log10(score.value+1))
+        if tmr%(max(100, 1300 - 65*level)) == 99: # 1300フレームに1回，強めの敵を出現させる
             emy2s.add(Enemy2())
-        if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
+        if tmr%(max(10, 200 - 20*level)) == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
-        if tmr% 1000 == 500:
+        if tmr%(max(70, 1000 - 50*level)) == 69:
             boss.add(BOSS())
 
         #爆弾の生成
@@ -676,7 +677,7 @@ def main():
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
-            rand = random.randint(1,4)  #4分の1の確率でアイテム生成
+            rand = random.randint(1,2)  #4分の1の確率でアイテム生成
             if rand == 1:
                 spanners.add(Spanner(emy))
             elif rand == 2:
