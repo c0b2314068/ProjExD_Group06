@@ -386,7 +386,7 @@ class Spanner(pg.sprite.Sprite):
         self.rect.y += self.speed #下方向に落下
     
 
-class Doublescore(pg.sprite.Sprite):
+class Double(pg.sprite.Sprite):
     def __init__(self, obj: "Enemy"):
         """
         アイテムを生成する
@@ -600,7 +600,7 @@ def main():
 
     #アイテムのグループ
     spanners = pg.sprite.Group()
-    doublescores = pg.sprite.Group()
+    doubles = pg.sprite.Group()
     btime = 0
 
     tmr = 0
@@ -679,7 +679,7 @@ def main():
             if rand == 1:
                 spanners.add(Spanner(emy))
             elif rand == 2:
-                doublescores.add(Doublescore(emy))
+                doubles.add(Double(emy))
 
         #アイテムの取得に関する処理
         for spanner in pg.sprite.spritecollide(bird, spanners, True):
@@ -689,7 +689,7 @@ def main():
                 neobeam = NeoBeam(bird, 7)
                 for beam in neobeam.gen_beams():
                     beams.add(beam)
-        for doublescore in pg.sprite.spritecollide(bird, doublescores, True):
+        for double in pg.sprite.spritecollide(bird, doubles, True):
             bird.change_img(6, screen)   # こうかとん喜びエフェクト
             score.value *= 2  # 2倍点アップ          
         
@@ -795,8 +795,8 @@ def main():
         score.update(screen)
         spanners.update()
         spanners.draw(screen)
-        doublescores.update()
-        doublescores.draw(screen)
+        doubles.update()
+        doubles.draw(screen)
         life.update(screen)
         pg.display.update()
         tmr += 1
